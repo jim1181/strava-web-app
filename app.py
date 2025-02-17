@@ -1,6 +1,7 @@
 import os
 from flask import Flask, redirect, request, session, url_for
 import requests
+import pandas as pd  # Don't forget to import pandas for CSV saving!
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -45,27 +46,26 @@ def callback():
     # Save the access token in the session
     session['access_token'] = data['access_token']
     
-    return redirect(url_for('fetch_data'))
+    return redirect(url_for('fetch_activities'))  # Redirect to fetch_activities route
 
-@app.route('/fetch_data')
-def fetch_data():
+@app.route('/fetch_activities')
+def fetch_activities():
     # Check if we have a valid access token
     if 'access_token' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('login'))  # Redirect to login if no access token
     
     access_token = session['access_token']
     
-    # Fetch Strava activities using the access token
-    headers = {'Authorization': f'Bearer {access_token}'}
-    response = requests.get(API_URL, headers=headers)
+    # Fetch all Strava activities using the access token
+    activities = fetch_all_strava_data(access_token)
     
-    if response.status_code == 200:
-        activities = response.json()
-        return f"Activities: {activities}"
+    if activities:
+        save_to_csv(activities)  # Optionally save them to CSV
+        return f"{len(activities)} activities fetched and saved to CSV."
     else:
-        return "Failed to fetch data from Strava."
+        return "Failed to fetch data from Strava or no activities found."
 
-# Fetch activities from Strava with pagination
+# Function to fetch activities with pagination
 def fetch_all_strava_data(access_token, per_page=200):
     all_activities = []  # List to hold all activities
     page = 1  # Start with the first page
@@ -96,28 +96,12 @@ def fetch_all_strava_data(access_token, per_page=200):
             break
     
     return all_activities  # Return the list of all activities
-    
+
 # Optional: Save activities to a CSV file using pandas
 def save_to_csv(activities, filename='activities.csv'):
     df = pd.DataFrame(activities)  # Convert the list of activities to a pandas DataFrame
     df.to_csv(filename, index=False)  # Save the DataFrame to a CSV file
     print(f"Saved {len(activities)} activities to {filename}")
-
-# New route to trigger fetching activities
-def fetch_activities():
-    try:
-        access_token = 'YOUR_ACCESS_TOKEN'  # Replace with your actual OAuth token from Strava
-        activities = fetch_all_strava_data(access_token)  # Fetch all activities
-        if not activities:
-            return "No activities found or an error occurred.", 500  # Return error message if no activities
-        save_to_csv(activities)  # Optionally save them to CSV
-        return f"{len(activities)} activities fetched and saved to CSV."
-    
-    except Exception as e:
-        # Log the exception details for debugging
-        print(f"An error occurred in the /fetch_activities route: {e}")
-        return f"An error occurred: {e}", 500
-
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=5000)
