@@ -71,26 +71,32 @@ def fetch_all_strava_data(access_token, per_page=200):
     page = 1  # Start with the first page
     
     while True:
-        url = 'https://www.strava.com/api/v3/athlete/activities'
-        headers = {'Authorization': f'Bearer {access_token}'}  # Authorization header
-        params = {'per_page': per_page, 'page': page}  # API parameters
-        
-        # Send GET request to Strava API
-        response = requests.get(url, headers=headers, params=params)
-        
-        # If the request is successful (status code 200)
-        if response.status_code == 200:
-            data = response.json()  # Convert the response to a JSON format (list of activities)
-            if not data:  # If no more data is returned (empty list), stop the loop
+        try:
+            url = 'https://www.strava.com/api/v3/athlete/activities'
+            headers = {'Authorization': f'Bearer {access_token}'}  # Authorization header
+            params = {'per_page': per_page, 'page': page}  # API parameters
+            
+            # Send GET request to Strava API
+            response = requests.get(url, headers=headers, params=params)
+            
+            # Check if response is valid
+            if response.status_code == 200:
+                data = response.json()  # Convert the response to a JSON format (list of activities)
+                if not data:  # If no more data is returned (empty list), stop the loop
+                    break
+                all_activities.extend(data)  # Add the activities to the list
+                page += 1  # Move to the next page
+            else:
+                # Log response status and content for debugging
+                print(f"Error fetching data: {response.status_code} - {response.text}")
                 break
-            all_activities.extend(data)  # Add the activities to the list
-            page += 1  # Move to the next page
-        else:
-            print(f"Error fetching data: {response.status_code}")
+        
+        except Exception as e:
+            print(f"Exception occurred while fetching activities: {e}")
             break
     
     return all_activities  # Return the list of all activities
-
+    
 # Optional: Save activities to a CSV file using pandas
 def save_to_csv(activities, filename='activities.csv'):
     df = pd.DataFrame(activities)  # Convert the list of activities to a pandas DataFrame
@@ -98,12 +104,19 @@ def save_to_csv(activities, filename='activities.csv'):
     print(f"Saved {len(activities)} activities to {filename}")
 
 # New route to trigger fetching activities
-@app.route('/fetch_activities')
 def fetch_activities():
-    access_token = 'YOUR_ACCESS_TOKEN'  # Replace with your actual OAuth token from Strava
-    activities = fetch_all_strava_data(access_token)  # Fetch all activities
-    save_to_csv(activities)  # Optionally save them to CSV
-    return f"{len(activities)} activities fetched and saved to CSV."
+    try:
+        access_token = 'YOUR_ACCESS_TOKEN'  # Replace with your actual OAuth token from Strava
+        activities = fetch_all_strava_data(access_token)  # Fetch all activities
+        if not activities:
+            return "No activities found or an error occurred.", 500  # Return error message if no activities
+        save_to_csv(activities)  # Optionally save them to CSV
+        return f"{len(activities)} activities fetched and saved to CSV."
+    
+    except Exception as e:
+        # Log the exception details for debugging
+        print(f"An error occurred in the /fetch_activities route: {e}")
+        return f"An error occurred: {e}", 500
 
 
 if __name__ == '__main__':
