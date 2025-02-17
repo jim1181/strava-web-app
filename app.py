@@ -66,4 +66,4 @@ def fetch_data():
         return "Failed to fetch data from Strava."
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0', port=5000)
