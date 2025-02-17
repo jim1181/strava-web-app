@@ -7,8 +7,8 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 # Strava API credentials (replace with your own)
-CLIENT_ID = '149188'  # Replace with your Strava app's Client ID
-CLIENT_SECRET = '38e66c0141e6e85a569cf67f97cb651bd4aba5e0'  # Replace with your Strava app's Client Secret
+CLIENT_ID = 'CLIENT ID'  # Replace with your Strava app's Client ID
+CLIENT_SECRET = 'CLIENT SECRET'  # Replace with your Strava app's Client Secret
 REDIRECT_URI = 'https://strava-web-app.onrender.com/callback'  # For local testing; update when deployed
 
 # OAuth endpoints
